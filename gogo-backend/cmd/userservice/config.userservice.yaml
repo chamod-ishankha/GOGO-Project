@@ -1,0 +1,5 @@
+server:
+  port: ":8080"
+  prefix: "/api/v1/gogo/user"
+database:
+  dsn: "host=bytecub.home.lan port=30432 user=bytecub_admin password=UwBKsdysFkqIW3k dbname=bytecub sslmode=disable search_path=gogo"

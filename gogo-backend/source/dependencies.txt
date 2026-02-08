@@ -1,0 +1,4 @@
+go get github.com/gorilla/mux        # HTTP router
+go get github.com/dgrijalva/jwt-go   # JWT
+go get golang.org/x/crypto/bcrypt    # Password hashing
+go get github.com/jmoiron/sqlx       # DB handling

@@ -1,0 +1,9 @@
+Uber Backend Architecture — Microservices
+
+* User Service – Handles user registration, login, roles (rider/driver/admin), profile management, JWT authentication.
+* Driver Service – Manage driver profiles, vehicle info, availability, driver status.
+* Ride Service – Handle ride requests, assignments, ride status (requested, accepted, in-progress, completed).
+* Payment Service – Handles payments, wallets, fare calculation.
+* Notification Service – Sends push notifications or emails for ride updates.
+* Geo/Location Service – Tracks driver and rider locations in real-time.
+* API Gateway – Optional: Single entry point to route requests to microservices.
