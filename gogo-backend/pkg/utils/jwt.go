@@ -17,10 +17,10 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func GenerateJWT(userID int, role string) (string, error) {
+func GenerateJWT(userID int64, role string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		UserID: int64(userID), // Cast to int64 here
+		UserID: userID, // Cast to int64 here
 		Role:   role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),

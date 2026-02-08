@@ -18,132 +18,138 @@ type VehicleHandler struct {
 
 func (h *VehicleHandler) RegisterVehicle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Register Vehicle endpoint hit")
-	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+	if !ok {
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
 
 	var req model.Vehicle
 	req.IsActive = true
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	// Get driver ID from user ID
 	driver, err := h.RepoD.GetByUserID(claims.UserID)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Driver profile not found"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Driver profile not found")
 		return
 	}
 
-	// Assign driver ID to request body
 	req.DriverID = driver.ID
 
-	// Check if vehicle already exists
 	exists, err := h.RepoV.VehicleExists(driver.ID)
 	if err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
+
 	if exists {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Vehicle already registered"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Vehicle already registered")
 		return
 	}
 
 	if err := h.RepoV.CreateVehicle(&req); err != nil {
-		code, msg := utils.HandleDBError(err)
 		fmt.Printf("Error creating vehicle: %v\n", err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		code, msg := utils.HandleDBError(err)
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	json.NewEncoder(w).Encode(req)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(req)
 }
 
 func (h *VehicleHandler) GetMyVehicle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Get My Vehicle endpoint hit")
-	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+	if !ok {
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
 
 	driver, err := h.RepoD.GetByUserID(claims.UserID)
 	if err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	// Check if vehicle registered for this driver
 	exists, err := h.RepoV.VehicleExists(driver.ID)
 	if err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
 	if !exists {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Vehicle Not Registered"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Vehicle not registered")
 		return
 	}
 
 	vehicle, err := h.RepoV.GetByDriverID(driver.ID)
 	if err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	json.NewEncoder(w).Encode(vehicle)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(vehicle)
 }
 
 func (h *VehicleHandler) UpdateVehicle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Update Vehicle endpoint hit")
-	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
 
-	driver, _ := h.RepoD.GetByUserID(claims.UserID)
-	// Check if vehicle registered for this driver
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+	if !ok {
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	driver, err := h.RepoD.GetByUserID(claims.UserID)
+	if err != nil {
+		utils.WriteJSONError(w, http.StatusBadRequest, "Driver profile not found")
+		return
+	}
+
 	exists, err := h.RepoV.VehicleExists(driver.ID)
 	if err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
+
 	if !exists {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Vehicle Not Registered"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Vehicle not registered")
 		return
 	}
 
 	vehicle, err := h.RepoV.GetByDriverID(driver.ID)
 	if err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(vehicle); err != nil {
-		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := h.RepoV.Update(vehicle); err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": "Vehicle updated",
 	})
 }

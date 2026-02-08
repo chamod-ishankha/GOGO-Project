@@ -17,13 +17,17 @@ type LocationHandler struct {
 
 func (h *LocationHandler) UpdateLocation(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("UpdateLocation endpoint hit")
-	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+	if !ok {
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
 
 	driver, err := h.DriverRepo.GetByUserID(claims.UserID)
 	if err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
@@ -33,21 +37,23 @@ func (h *LocationHandler) UpdateLocation(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	err = h.LocationRepo.UpdateDriverLocation(driver.ID, req.Latitude, req.Longitude)
-	if err != nil {
-		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+	if req.Latitude == 0 || req.Longitude == 0 {
+		utils.WriteJSONError(w, http.StatusBadRequest, "Latitude and longitude are required")
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := h.LocationRepo.UpdateDriverLocation(driver.ID, req.Latitude, req.Longitude); err != nil {
+		code, msg := utils.HandleDBError(err)
+		utils.WriteJSONError(w, code, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": "Location updated",
 	})
 }

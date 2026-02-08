@@ -46,4 +46,27 @@ CREATE TABLE IF NOT EXISTS gogo.vehicles (
         ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS gogo.rides (
+    id BIGSERIAL PRIMARY KEY,
+    rider_id INT NOT NULL,
+    driver_id INT,
+    pickup_latitude DOUBLE PRECISION NOT NULL,
+    pickup_longitude DOUBLE PRECISION NOT NULL,
+    drop_latitude DOUBLE PRECISION NOT NULL,
+    drop_longitude DOUBLE PRECISION NOT NULL,
+    status VARCHAR(20) DEFAULT 'requested', -- requested, accepted, in_progress, completed, cancelled
+    fare DOUBLE PRECISION DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+
+    CONSTRAINT fk_rider FOREIGN KEY (rider_id)
+    REFERENCES gogo.users(id)
+    ON DELETE CASCADE,
+
+    CONSTRAINT fk_driver FOREIGN KEY (driver_id)
+    REFERENCES gogo.drivers(id)
+    ON DELETE SET NULL
+);
+
+
 

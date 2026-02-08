@@ -22,3 +22,8 @@ CREATE TRIGGER update_vehicles_updated_at
 BEFORE UPDATE ON gogo.vehicles
 FOR EACH ROW
 EXECUTE FUNCTION gogo.update_updated_at_column();
+
+CREATE TRIGGER update_rides_updated_at
+BEFORE UPDATE ON gogo.rides
+FOR EACH ROW
+EXECUTE FUNCTION gogo.update_updated_at_column();

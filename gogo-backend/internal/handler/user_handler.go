@@ -21,99 +21,103 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var req model.Register
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	// ✅ Check if email already exists
 	existingUser, _ := h.Repo.GetUserByEmail(req.Email)
 	if existingUser != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Email already exists"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Email already exists")
 		return
 	}
 
-	// ✅ Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Could not hash password"})
+		utils.WriteJSONError(w, http.StatusInternalServerError, "Failed to secure password")
 		return
 	}
 	req.Password = hashedPassword
 
-	// ✅ Save user
 	if err := h.Repo.CreateUser(&req); err != nil {
 		code, msg := utils.HandleDBError(err)
-		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(map[string]string{"error": msg})
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	// ✅ Generate JWT token
-	token, _ := utils.GenerateJWT(req.ID, req.Role)
+	token, err := utils.GenerateJWT(req.ID, req.Role)
+	if err != nil {
+		utils.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate token")
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"token": token,
 	})
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Login endpoint hit")
+
 	var req model.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("Invalid login request: %v", err)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	user, err := h.Repo.GetUserByEmail(req.Email)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		log.Printf("Login failed for email %s: %v", req.Email, err)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Email or password incorrect"})
+		log.Printf("Login failed for %s: %v", req.Email, err)
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Email or password incorrect")
 		return
 	}
 
 	if !utils.CheckPasswordHash(req.Password, user.Password) {
-		w.WriteHeader(http.StatusUnauthorized)
-		log.Printf("Password mismatch for email %s", req.Email)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Email or password incorrect"})
+		log.Printf("Password mismatch for %s", req.Email)
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Email or password incorrect")
 		return
 	}
 
 	token, err := utils.GenerateJWT(user.ID, user.Role)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("Token generation failed for user ID %d: %v", user.ID, err)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Could not generate token"})
+		log.Printf("Token generation failed for user %d: %v", user.ID, err)
+		utils.WriteJSONError(w, http.StatusInternalServerError, "Could not generate token")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetMe endpoint hit")
-	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
 
-	user, err := h.Repo.GetUserByID(claims.UserID)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "User not found"})
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+	if !ok {
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	json.NewEncoder(w).Encode(user)
+	user, err := h.Repo.GetUserByID(claims.UserID)
+	if err != nil {
+		code, msg := utils.HandleDBError(err)
+		utils.WriteJSONError(w, code, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(user)
 }
 
 func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("UpdateMe endpoint hit")
-	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
+	if !ok {
+		utils.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
 
 	var req struct {
 		Name  string `json:"name"`
@@ -121,23 +125,23 @@ func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if req.Name == "" || req.Email == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Name and email required"})
+		utils.WriteJSONError(w, http.StatusBadRequest, "Name and email are required")
 		return
 	}
 
-	err := h.Repo.UpdateUser(claims.UserID, req.Name, req.Email)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	if err := h.Repo.UpdateUser(claims.UserID, req.Name, req.Email); err != nil {
+		code, msg := utils.HandleDBError(err)
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": "Profile updated successfully",
 	})
 }

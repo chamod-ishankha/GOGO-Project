@@ -1,35 +1,44 @@
 package utils
 
 import (
+	"database/sql"
+	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/lib/pq"
 )
 
-// DBErrorResponse helps standardize error messages
-type DBErrorResponse struct {
-	StatusCode int
-	Message    string
-}
-
 func HandleDBError(err error) (int, string) {
-	var pqErr *pq.Error
+	// ✅ Handle "no rows" FIRST
+	if errors.Is(err, sql.ErrNoRows) {
+		return http.StatusBadRequest, "Record not found."
+	}
 
-	// Check if it's a Postgres driver error
+	var pqErr *pq.Error
 	if errors.As(err, &pqErr) {
 		switch pqErr.Code {
-		case "23505": // unique_violation
-			return http.StatusBadRequest, "The record already exists (duplicate entry)."
-		case "23503": // foreign_key_violation
-			return http.StatusBadRequest, "Related record not found (invalid ID)."
-		case "23502": // not_null_violation
-			return http.StatusBadRequest, "A required field is missing."
-		case "28P01": // invalid_password
+		case "23505":
+			return http.StatusBadRequest, "Duplicate entry already exists."
+		case "23503":
+			return http.StatusBadRequest, "Related record not found."
+		case "23502":
+			return http.StatusBadRequest, "Missing required field."
+		case "28P01":
 			return http.StatusUnauthorized, "Database authentication failed."
+		default:
+			return http.StatusInternalServerError, "Database error occurred."
 		}
 	}
 
-	// Default to 500 for generic SQL errors or connection issues
-	return http.StatusBadRequest, err.Error()
+	// Fallback
+	return http.StatusInternalServerError, err.Error()
+}
+
+func WriteJSONError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"error": message,
+	})
 }
