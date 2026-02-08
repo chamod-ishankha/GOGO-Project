@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -45,6 +46,11 @@ func main() {
 	protected.HandleFunc("/register", driverHandler.RegisterDriver).Methods("POST")
 	protected.HandleFunc("/vehicle", vehicleHandler.RegisterVehicle).Methods("POST")
 
+	err = http.ListenAndServe(cfg.Server.Port, r)
+	if err != nil {
+		fmt.Println("Failed to start server:", err)
+		return
+	}
+
 	log.Printf("Driver Service running at %s with prefix %s", cfg.Server.Port, cfg.Server.Prefix)
-	http.ListenAndServe(cfg.Server.Port, r)
 }

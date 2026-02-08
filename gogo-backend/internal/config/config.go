@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -20,17 +21,21 @@ type Config struct {
 func LoadConfig(serviceName string) (*Config, error) {
 	filename := "config." + serviceName + ".yaml"
 
-	// Read the file from the current working directory
-	data, err := os.ReadFile(filename)
+	configDir := os.Getenv("CONFIG_DIR")
+	if configDir == "" {
+		return nil, fmt.Errorf("CONFIG_DIR environment variable not set")
+	}
+
+	fullPath := filepath.Join(configDir, filename)
+
+	data, err := os.ReadFile(fullPath)
 	if err != nil {
-		// Get current working directory to show in the error message
-		cwd, _ := os.Getwd()
-		return nil, fmt.Errorf("could not find %s in %s: %w", filename, cwd, err)
+		return nil, fmt.Errorf("could not find %s at %s: %w", filename, fullPath, err)
 	}
 
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("error parsing yaml: %w", err)
+		return nil, err
 	}
 
 	return &cfg, nil
