@@ -30,11 +30,15 @@ CREATE TABLE IF NOT EXISTS gogo.drivers (
 CREATE TABLE IF NOT EXISTS gogo.vehicles (
     id BIGSERIAL PRIMARY KEY,
     driver_id BIGINT NOT NULL,
+    vehicle_type VARCHAR(20) NOT NULL, -- car, bike, tuk
     make VARCHAR(50) NOT NULL,
     model VARCHAR(50) NOT NULL,
     year INT NOT NULL,
+    color VARCHAR(30),
     plate_number VARCHAR(20) UNIQUE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
 
     CONSTRAINT fk_vehicle_driver
         FOREIGN KEY (driver_id)

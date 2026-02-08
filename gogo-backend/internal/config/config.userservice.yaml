@@ -3,3 +3,7 @@ server:
   prefix: "/api/v1/gogo/user"
 database:
   dsn: "host=192.168.1.8 port=30432 user=bytecub_admin password=UwBKsdysFkqIW3k dbname=bytecub sslmode=disable search_path=gogo"
+redis:
+  address: "192.168.1.8:30079"
+  password: "pvmjrzcuA@89"
+  db: 1

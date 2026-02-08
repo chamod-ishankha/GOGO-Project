@@ -98,6 +98,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GetMe endpoint hit")
 	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
 
 	user, err := h.Repo.GetUserByID(claims.UserID)
@@ -111,6 +112,7 @@ func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("UpdateMe endpoint hit")
 	claims := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
 
 	var req struct {

@@ -31,5 +31,5 @@ func HandleDBError(err error) (int, string) {
 	}
 
 	// Default to 500 for generic SQL errors or connection issues
-	return http.StatusInternalServerError, "An internal database error occurred."
+	return http.StatusBadRequest, err.Error()
 }

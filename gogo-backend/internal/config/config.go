@@ -16,6 +16,11 @@ type Config struct {
 	Database struct {
 		DSN string `yaml:"dsn"` // Data Source Name
 	} `yaml:"database"`
+	Redis struct {
+		Addr     string `yaml:"address"`
+		Password string `yaml:"password"`
+		DB       int    `yaml:"db"`
+	}
 }
 
 func LoadConfig(serviceName string) (*Config, error) {
