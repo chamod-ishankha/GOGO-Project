@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Apply smooth transitions to background and text colors globally */
+@layer base {
+    html, body {
+        @apply transition-colors duration-500 ease-in-out;
+    }
+
+    /* This ensures all div, buttons, and inputs transition smoothly too */
+    *, *::before, *::after {
+        @apply transition-colors duration-300 ease-in-out;
+    }
+}
