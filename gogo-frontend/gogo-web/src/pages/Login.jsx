@@ -81,7 +81,7 @@ export default function Login() {
                 </form>
 
                 {!isAdminPath && (
-                    <button onClick={() => window.history.back()} className="w-full mt-4 text-gray-400 hover:text-gray-600 text-sm">
+                    <button onClick={() => {window.location.href = '/'}} className="w-full mt-4 text-gray-400 hover:text-gray-600 text-sm">
                         ← Change account type
                     </button>
                 )}
