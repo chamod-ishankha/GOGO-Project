@@ -49,7 +49,7 @@ func main() {
 	protected.HandleFunc("/me", userHandler.GetMe).Methods("GET")
 	protected.HandleFunc("/me", userHandler.UpdateMe).Methods("PUT")
 
-	log.Printf("Driver Service running at %s with prefix %s", cfg.Server.Port, cfg.Server.Prefix)
+	log.Printf("User Service running at %s with prefix %s", cfg.Server.Port, cfg.Server.Prefix)
 	err = http.ListenAndServe(cfg.Server.Port, r)
 	if err != nil {
 		fmt.Println("Failed to start server:", err)

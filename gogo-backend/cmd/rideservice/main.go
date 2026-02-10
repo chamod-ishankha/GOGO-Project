@@ -55,7 +55,7 @@ func main() {
 	protected.HandleFunc("", rideHandler.RequestRide).Methods("POST")
 	protected.HandleFunc("/status", rideHandler.ChangeStatusRide).Methods("PUT")
 
-	log.Printf("Driver Service running at %s with prefix %s", cfg.Server.Port, cfg.Server.Prefix)
+	log.Printf("Rider Service running at %s with prefix %s", cfg.Server.Port, cfg.Server.Prefix)
 	err = http.ListenAndServe(cfg.Server.Port, r)
 	if err != nil {
 		fmt.Println("Failed to start server:", err)

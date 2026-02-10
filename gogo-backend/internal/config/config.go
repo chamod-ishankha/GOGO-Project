@@ -8,6 +8,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type ServiceConfig struct {
+	URL    string `yaml:"url"`
+	Prefix string `yaml:"prefix"`
+}
+
 type Config struct {
 	Server struct {
 		Port   string `yaml:"port"`
@@ -21,6 +26,7 @@ type Config struct {
 		Password string `yaml:"password"`
 		DB       int    `yaml:"db"`
 	}
+	Services map[string]ServiceConfig `yaml:"services"`
 }
 
 func LoadConfig(serviceName string) (*Config, error) {

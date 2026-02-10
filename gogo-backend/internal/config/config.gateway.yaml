@@ -1,0 +1,12 @@
+server:
+  port: ":3000" # The single port your frontend will talk to
+services:
+  user:
+    url: "http://localhost:8080"
+    prefix: "/api/v1/gogo/user"
+  ride:
+    url: "http://localhost:8081"
+    prefix: "/api/v1/gogo/ride"
+  driver:
+    url: "http://localhost:8082"
+    prefix: "/api/v1/gogo/driver"
