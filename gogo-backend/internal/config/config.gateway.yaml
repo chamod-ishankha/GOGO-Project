@@ -4,9 +4,9 @@ services:
   user:
     url: "http://localhost:8080"
     prefix: "/api/v1/gogo/user"
-  ride:
-    url: "http://localhost:8081"
-    prefix: "/api/v1/gogo/ride"
   driver:
-    url: "http://localhost:8082"
+    url: "http://localhost:8081"
     prefix: "/api/v1/gogo/driver"
+  rides:
+    url: "http://localhost:8082"
+    prefix: "/api/v1/gogo/rides"

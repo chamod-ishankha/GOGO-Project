@@ -50,10 +50,12 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"token": token,
-	})
+	response := map[string]interface{}{
+		"message": "User registered successfully",
+		"token":   token,
+	}
+
+	utils.WriteJSONResponse(w, http.StatusCreated, response)
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +88,6 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	response := map[string]interface{}{
 		"token": token,
 		"user": map[string]string{
@@ -94,7 +95,8 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 			"role":     user.Role,
 		},
 	}
-	_ = json.NewEncoder(w).Encode(response)
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }
 
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -113,8 +115,9 @@ func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(user)
+	response := user
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }
 
 func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
@@ -147,8 +150,9 @@ func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{
+	response := map[string]string{
 		"message": "Profile updated successfully",
-	})
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }

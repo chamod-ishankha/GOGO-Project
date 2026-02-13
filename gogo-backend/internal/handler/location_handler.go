@@ -56,4 +56,10 @@ func (h *LocationHandler) UpdateLocation(w http.ResponseWriter, r *http.Request)
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": "Location updated",
 	})
+
+	response := map[string]string{
+		"message": "Location updated successfully",
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }

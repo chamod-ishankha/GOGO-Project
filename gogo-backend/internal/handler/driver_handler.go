@@ -51,8 +51,7 @@ func (h *DriverHandler) RegisterDriver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(driver)
+	utils.WriteJSONResponse(w, http.StatusCreated, driver)
 }
 
 func (h *DriverHandler) SetAvailability(w http.ResponseWriter, r *http.Request) {
@@ -100,8 +99,7 @@ func (h *DriverHandler) SetAvailability(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{
 		"message": "You are now " + status,
 	})
 }

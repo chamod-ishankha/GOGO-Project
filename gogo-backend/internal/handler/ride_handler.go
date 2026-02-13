@@ -20,22 +20,13 @@ type RideHandler struct {
 	DriverRepo *repository.DriverRepository
 }
 
-// helper to return JSON error
-func respondWithError(w http.ResponseWriter, code int, msg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"error": msg,
-	})
-}
-
 // RequestRide handles ride requests
 func (h *RideHandler) RequestRide(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Request Ride endpoint hit")
 
 	claims, ok := r.Context().Value(middleware.UserContextKey).(*utils.Claims)
 	if !ok {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		utils.WriteJSONError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -47,7 +38,7 @@ func (h *RideHandler) RequestRide(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		utils.WriteJSONError(w, http.StatusInternalServerError, "Failed to decode request body")
 		return
 	}
 
@@ -62,7 +53,7 @@ func (h *RideHandler) RequestRide(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.RideRepo.CreateRide(ride); err != nil {
 		code, msg := utils.HandleDBError(err)
-		respondWithError(w, code, msg)
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
@@ -70,27 +61,28 @@ func (h *RideHandler) RequestRide(w http.ResponseWriter, r *http.Request) {
 	driverID, err := h.findNearestDriver(req.PickupLat, req.PickupLng)
 	if err != nil {
 		if err == redis.Nil {
-			respondWithError(w, http.StatusNotFound, "No available drivers nearby")
+			utils.WriteJSONError(w, http.StatusNotFound, "No available drivers nearby")
 		} else {
-			respondWithError(w, http.StatusInternalServerError, "Failed to search nearby drivers")
+			utils.WriteJSONError(w, http.StatusInternalServerError, "Failed to search nearby drivers")
 		}
 		return
 	}
 
 	if err := h.RideRepo.AssignDriver(ride.ID, driverID); err != nil {
 		code, msg := utils.HandleDBError(err)
-		respondWithError(w, code, msg)
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
 	if err := h.DriverRepo.SetAvailability(driverID, false); err != nil {
 		code, msg := utils.HandleDBError(err)
-		respondWithError(w, code, msg)
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(ride)
+	response := ride
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }
 
 // findNearestDriver queries Redis to find the nearest driver
@@ -134,29 +126,29 @@ func (h *RideHandler) ChangeStatusRide(w http.ResponseWriter, r *http.Request) {
 	rideStatusStr := r.URL.Query().Get("status")
 
 	if rideIDStr == "" {
-		respondWithError(w, http.StatusBadRequest, "Ride ID is required")
+		utils.WriteJSONError(w, http.StatusBadRequest, "Ride ID is required")
 		return
 	}
 
 	if rideStatusStr == "" {
-		respondWithError(w, http.StatusBadRequest, "Ride status is required")
+		utils.WriteJSONError(w, http.StatusBadRequest, "Ride status is required")
 		return
 	}
 
 	if rideStatusStr != "completed" && rideStatusStr != "cancelled" {
-		respondWithError(w, http.StatusBadRequest, "Ride status must be 'completed' or 'cancelled'")
+		utils.WriteJSONError(w, http.StatusBadRequest, "Ride status must be 'completed' or 'cancelled'")
 		return
 	}
 
 	rideID, err := strconv.Atoi(rideIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid ride ID")
+		utils.WriteJSONError(w, http.StatusBadRequest, "Invalid ride ID")
 		return
 	}
 
 	ride, err := h.RideRepo.GetRideByID(int64(rideID))
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Ride not found")
+		utils.WriteJSONError(w, http.StatusNotFound, "Ride not found")
 		return
 	}
 
@@ -165,27 +157,28 @@ func (h *RideHandler) ChangeStatusRide(w http.ResponseWriter, r *http.Request) {
 		fare = 50.0 + 10*rand.Float64()*10
 		if err := h.RideRepo.UpdateFare(int64(rideID), fare); err != nil {
 			code, msg := utils.HandleDBError(err)
-			respondWithError(w, code, msg)
+			utils.WriteJSONError(w, code, msg)
 			return
 		}
 	}
 
 	if err := h.RideRepo.UpdateStatus(int64(rideID), rideStatusStr); err != nil {
 		code, msg := utils.HandleDBError(err)
-		respondWithError(w, code, msg)
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
 	if err := h.DriverRepo.SetAvailability(ride.DriverID, true); err != nil {
 		code, msg := utils.HandleDBError(err)
-		respondWithError(w, code, msg)
+		utils.WriteJSONError(w, code, msg)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	response := map[string]interface{}{
 		"ride_id": rideID,
 		"fare":    fare,
 		"status":  rideStatusStr,
-	})
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }

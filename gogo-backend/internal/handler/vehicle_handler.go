@@ -60,8 +60,9 @@ func (h *VehicleHandler) RegisterVehicle(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(req)
+	response := req
+
+	utils.WriteJSONResponse(w, http.StatusCreated, response)
 }
 
 func (h *VehicleHandler) GetMyVehicle(w http.ResponseWriter, r *http.Request) {
@@ -99,8 +100,9 @@ func (h *VehicleHandler) GetMyVehicle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(vehicle)
+	response := vehicle
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }
 
 func (h *VehicleHandler) UpdateVehicle(w http.ResponseWriter, r *http.Request) {
@@ -148,8 +150,9 @@ func (h *VehicleHandler) UpdateVehicle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{
+	response := map[string]interface{}{
 		"message": "Vehicle updated",
-	})
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, response)
 }

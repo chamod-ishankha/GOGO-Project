@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/lib/pq"
 )
@@ -35,10 +36,18 @@ func HandleDBError(err error) (int, string) {
 	return http.StatusInternalServerError, err.Error()
 }
 
+// Response sends a JSON response with the correct header
+func WriteJSONResponse(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
 func WriteJSONError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]string{
-		"error": message,
+		"error":     message,
+		"timestamp": time.Now().Format(time.RFC1123),
 	})
 }
